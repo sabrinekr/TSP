@@ -1,5 +1,6 @@
 import gym
 from omegaconf import DictConfig
+from math import sqrt
 from copy import copy, deepcopy
 from city import City
 
@@ -11,12 +12,25 @@ class TSP(gym.Env):
         self.file_path = config["data_file_path"]
         self.cities = load_data(self.file_path)
         self.cities_cache = deepcopy(self.cities)
+        self.reward = 0
+        self.obs = {}
 
     def reset(self):
-        self.cities = self.cities_cache
+        self.obs = {"non_visited_cities": self.cities_cache, "last_visited_city": City(0,0,0)}
+        return self.obs
 
-    def step(self, indx: int):
-        return None
+    def step(self, action: int):
+        visited_city = self.cities[action]
+        self.cities.pop(action)
+        self.reward += sqrt(((self.obs["last_visited_city"].x_coord - visited_city.x_coord)**2)+((self.obs["last_visited_city"].y_coord - visited_city.y_coord) **2))
+        if self.cities:
+            self.obs = {"non_visited_cities": self.cities, "last_visited_city": visited_city}
+            done = False
+        else:
+            self.obs = {}
+            done = True
+
+        return self.obs, self.reward, done
 
 def load_data(file_path)-> list:
     lines = []
